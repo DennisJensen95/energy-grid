@@ -1,0 +1,8 @@
+run-app:
+    @echo "Running app..."
+    dotnet run --project EnergyAnalyzerWebApp
+
+test: 
+    @echo "Running tests..."
+    rm -rf EnergyAnalyzer.Tests/TestResults
+    cd EnergyAnalyzer.Tests && dotnet test --collect:"XPlat Code Coverage" --results-directory ./TestResults

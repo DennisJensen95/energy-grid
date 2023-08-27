@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  backend-ci:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Install Nix
+      uses: cachix/install-nix-action@v20
+      with:
+        nix_path: nixpkgs=channel:nixos-unstable
+
+    - name: Nix update
+      run: |
+        # Update nix
+        nix-channel --add https://nixos.org/channels/nixpkgs-unstable
+        nix-channel --update
+
+    - name: Load Nix shell
+      working-directory: ./apps/EnergyAnalyzer
+      run: nix-shell ../../shell.nix --run "echo 'Loading dev env'"
+
+    - name: Run unit tests
+      working-directory: ./apps/EnergyAnalyzer
+      run: |
+        nix-shell ../../shell.nix --run "just test"
+        coverageFilePath=$(find ./EnergyAnalyzer.Tests/TestResults -name 'coverage.cobertura.xml') 
+        echo $coverageFilePath
+        echo "coverageFilePath=$coverageFilePath" >> $GITHUB_ENV
+
+    - uses: dennisjensen95/coverage-scope@v0.5.1
+      with: 
+        coverage-filepath: apps/EnergyAnalyzer/${{ env.coverageFilePath }}
+        branch: main
+        threshold-total: 50
+        threshold-change: 80
